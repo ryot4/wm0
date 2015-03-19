@@ -4,7 +4,9 @@
 #include <xcb/xcb.h>
 #include "queue.h"
 
-// Windows are managed in doubly linked list (TAILQ).
+// This structure represents a window managed by the WM.
+// All windows are added to the TAILQ when it is mapped, and removed when it
+// is unmapped.
 struct window {
     TAILQ_ENTRY(window) link;  // link for the window list
     xcb_window_t id;           // XID of the window

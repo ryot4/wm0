@@ -19,7 +19,7 @@ handle_map_request(xcb_map_request_event_t *ev)
         // The window is not already managed by WM.
         xcb_get_window_attributes_reply_t *r;
 
-        // Windows which have override_redirect flag is not handled by WM.
+        // Windows with override_redirect flag is not handled by WM.
         r = XCB_REQUEST_AND_REPLY(wm.conn, get_window_attributes, NULL,
             ev->window);
         if (r != NULL && !r->override_redirect) {
@@ -28,7 +28,8 @@ handle_map_request(xcb_map_request_event_t *ev)
                 xcb_map_window(wm.conn, win->id);
                 window_focus(win);
             } else {
-                // If we fail to manage the window, map it
+                // If we fail to manage the window, map it so that the user can
+                // access the window even in that case.
                 xcb_map_window(wm.conn, ev->window);
             }
         }
@@ -77,6 +78,7 @@ handle_configure_request(xcb_configure_request_event_t *ev)
     LOG("ConfigureRequest on %x\n", ev->window);
 
     // Configure the window as requested, except for border width.
+    // values must be in the same order as XCB_CONFIG_* are defined.
     if (ev->value_mask & XCB_CONFIG_WINDOW_X)
         values[i++] = ev->x;
     if (ev->value_mask & XCB_CONFIG_WINDOW_Y)
@@ -101,7 +103,6 @@ start_pointer_grab(int mode, int16_t x, int16_t y)
     wm.grab.x = x;
     wm.grab.y = y;
 
-    // FIXME: should be GRAB_MODE_SYNC?
     r = XCB_REQUEST_AND_REPLY(wm.conn, grab_pointer, NULL, false,
         wm.screen->root, XCB_EVENT_MASK_BUTTON_RELEASE |
         XCB_EVENT_MASK_POINTER_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC,

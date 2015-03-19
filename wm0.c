@@ -58,6 +58,9 @@ init(void)
     }
     wm.screen = xcb_aux_get_screen(wm.conn, screen_num);
 
+    // Only a single client can set XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT on the
+    // root window at a time.
+    // If this request fails, another WM is already running.
     e = XCB_REQUEST_AND_CHECK(wm.conn, change_window_attributes,
         wm.screen->root, XCB_CW_EVENT_MASK, &event_mask);
     if (e != NULL) {
@@ -89,6 +92,11 @@ scan(void)
 
         r = XCB_REQUEST_AND_REPLY(wm.conn, get_window_attributes, NULL,
             children[i]);
+
+        // Windows with override_redirect flag is not handled by WM.
+        // In addition, we only manage windows which are mapped.
+        // If we support minimization, we should manage unmapped windows,
+        // because minimization is usually accomplished by unmapping windows.
         if (!r->override_redirect && r->map_state == XCB_MAP_STATE_VIEWABLE)
             win = window_manage(children[i]);
         free(r);
@@ -104,16 +112,21 @@ run(void)
 {
     xcb_generic_event_t *event;
 
+    // This is the main event loop of WM.
     while ((event = xcb_wait_for_event(wm.conn)) != NULL) {
         if (event->response_type == 0) {
             xcb_generic_error_t *e = (xcb_generic_error_t *)event;
 
+            // BadWindow error is sometimes not avoidable, because the window
+            // we operate can be unmapped or destroyed just after we send a
+            // request about it, by its owner process.
             if (e->error_code != XCB_WINDOW) {
                 fprintf(stderr, "X protocol error: request=%s, error=%s\n",
                     xcb_event_get_request_label(e->major_code),
                     xcb_event_get_error_label(e->error_code));
             }
         } else {
+            // Dispatch the event to the appropriate function.
             switch (XCB_EVENT_RESPONSE_TYPE(event)) {
                 HANDLE_EVENT(XCB_MAP_REQUEST, handle_map_request);
                 HANDLE_EVENT(XCB_UNMAP_NOTIFY, handle_unmap_notify);
@@ -123,6 +136,9 @@ run(void)
                 HANDLE_EVENT(XCB_BUTTON_RELEASE, handle_button_release);
                 HANDLE_EVENT(XCB_MOTION_NOTIFY, handle_motion_notify);
             }
+            // Requests are buffered and not always automatically sent to the
+            // server, so we need to flush the queue.
+            // See also: http://lists.freedesktop.org/archives/xcb/2008-December/004152.html
             xcb_flush(wm.conn);
         }
         free(event);
