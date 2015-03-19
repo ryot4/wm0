@@ -56,6 +56,7 @@ window_manage(xcb_window_t id)
     xcb_get_geometry_reply_t *r;
 
     LOG("manage %x\n", id);
+
     win = malloc(sizeof(struct window));
     if (win == NULL)
         return NULL;
@@ -152,6 +153,7 @@ window_focus(struct window *win)
     }
 
     LOG("focus %x\n", to_focus);
+
     xcb_set_input_focus(wm.conn, XCB_INPUT_FOCUS_PARENT, to_focus,
         XCB_CURRENT_TIME);
 }
@@ -160,6 +162,8 @@ void
 window_close(struct window *win)
 {
     LOG("close %x\n", win->id);
-    // In fact, this does not "close" the window.
+
+    // In fact, this does not "close" the window, but forces the close down of
+    // the client which has the window.
     xcb_kill_client(wm.conn, win->id);
 }
