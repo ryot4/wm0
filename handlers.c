@@ -11,33 +11,28 @@ void
 handle_map_request(xcb_map_request_event_t *ev)
 {
     struct window *win;
+    xcb_get_window_attributes_reply_t *r;
 
     LOG("MapRequest on %x\n", ev->window);
 
-    win = window_find(ev->window);
-    if (win == NULL) {
-        // The window is not already managed by WM.
-        xcb_get_window_attributes_reply_t *r;
-
-        // Windows with override_redirect flag is not handled by WM.
-        r = XCB_REQUEST_AND_REPLY(wm.conn, get_window_attributes, NULL,
-            ev->window);
-        if (r != NULL && !r->override_redirect) {
+    // Windows with override_redirect flag is not handled by WM.
+    r = XCB_REQUEST_AND_REPLY(wm.conn, get_window_attributes, NULL, ev->window);
+    if (r != NULL) {
+        if (!r->override_redirect) {
             win = window_manage(ev->window);
             if (win != NULL) {
                 xcb_map_window(wm.conn, win->id);
                 window_focus(win);
-            } else {
-                // If we fail to manage the window, map it so that the user can
-                // access the window even in that case.
-                xcb_map_window(wm.conn, ev->window);
             }
         }
-        free(r);
-    } else {
-        // The window is already managed by wm, and has been unmapped.
-        xcb_map_window(wm.conn, win->id);
     }
+
+    // If we fail to manage the window, map it so that the user can access the
+    // window even in that case.
+    if (r == NULL || (!r->override_redirect && win == NULL))
+        xcb_map_window(wm.conn, ev->window);
+
+    free(r);
 }
 
 // UnmapNotify indicates that a window was unmapped.
