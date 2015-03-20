@@ -26,8 +26,8 @@
 // State of the mouse pointer
 enum {
     NO_GRAB,     // Pointer is not grabbed
-    GRAB_MOVE,   // Pointer is grabbed for move
-    GRAB_RESIZE  // Pointer is grabbed for resize
+    GRAB_MOVE,   // Pointer is grabbed for moving a window
+    GRAB_RESIZE  // Pointer is grabbed for resizing a window
 };
 
 // State of the WM

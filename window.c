@@ -5,15 +5,18 @@
 static TAILQ_HEAD(windows, window) windows;  // List of windows
 static struct window *current;               // Currently focused window
 
-#define GRAB_BUTTON(id, index, modifier) \
-    xcb_grab_button(wm.conn, false, id, XCB_EVENT_MASK_BUTTON_PRESS, \
-        XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, index, \
-        modifier)
+// Establish a passive grab of the mouse on the given window to receive a
+// ButtonPress event when the mouse button is pressed.
 static void
 grab_buttons(xcb_window_t id)
 {
     uint8_t buttons[] = { BUTTON_MOVE, BUTTON_RESIZE, BUTTON_CLOSE };
     uint16_t modifiers[] = { 0, XCB_MOD_MASK_LOCK };
+
+#define GRAB_BUTTON(id, index, modifier) \
+    xcb_grab_button(wm.conn, false, id, XCB_EVENT_MASK_BUTTON_PRESS, \
+        XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, index, \
+        modifier)
 
     for (int i = 0; i < LENGTH(buttons); ++i) {
         for (int j = 0; j < LENGTH(modifiers); ++j) {
@@ -21,8 +24,9 @@ grab_buttons(xcb_window_t id)
             GRAB_BUTTON(id, buttons[i], MODKEY_MASK | modifiers[j]);
         }
     }
-}
+
 #undef GRAB_BUTTON
+}
 
 void
 window_init(void)

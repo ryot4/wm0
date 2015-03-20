@@ -72,6 +72,11 @@ handle_configure_request(xcb_configure_request_event_t *ev)
 
     LOG("ConfigureRequest on %x\n", ev->window);
 
+    // We need to handle ConfigureRequest from unmanaged windows (i.e. unmapped
+    // windows), because some clients configure window before mapping it.
+    // For example, xterm creates a 1x1 window, then configure it to actual
+    // size (this causes ConfigureRequest), and finally map it.
+
     // Configure the window as requested, except for border width.
     // values must be in the same order as XCB_CONFIG_* are defined.
     if (ev->value_mask & XCB_CONFIG_WINDOW_X)
@@ -89,6 +94,8 @@ handle_configure_request(xcb_configure_request_event_t *ev)
     xcb_configure_window(wm.conn, ev->window, ev->value_mask, values);
 }
 
+// Establish an active grab of the mouse to intercept all mouse events
+// (MotionNotify and ButtonRelease).
 static void
 start_pointer_grab(int mode, int16_t x, int16_t y)
 {
@@ -107,6 +114,7 @@ start_pointer_grab(int mode, int16_t x, int16_t y)
     free(r);
 }
 
+// Stop an active grab of the mouse.
 static void
 stop_pointer_grab()
 {

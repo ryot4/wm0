@@ -26,7 +26,7 @@ static void scan(void);
 static void run(void);
 static void cleanup(void);
 
-// Get pixel value for given RGB string.
+// Get pixel value for the given RGB string.
 static uint32_t
 alloc_color(char *rgb_string)
 {
@@ -48,8 +48,10 @@ init(void)
 {
     int screen_num;
     xcb_generic_error_t *e;
-    uint32_t event_mask = XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |
-        XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT;
+    // Event mask for the root window, which decides the events to receive.
+    uint32_t root_event_mask =
+        XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |   // for UnmapNotify and DestroyNotify
+        XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT;  // for MapRequest and ConfigureRequest
 
     wm.conn = xcb_connect(NULL, &screen_num);
     if (xcb_connection_has_error(wm.conn)) {
@@ -62,7 +64,7 @@ init(void)
     // root window at a time.
     // If this request fails, another WM is already running.
     e = XCB_REQUEST_AND_CHECK(wm.conn, change_window_attributes,
-        wm.screen->root, XCB_CW_EVENT_MASK, &event_mask);
+        wm.screen->root, XCB_CW_EVENT_MASK, &root_event_mask);
     if (e != NULL) {
         fputs("another window manager is running\n", stderr);
         exit(1);
@@ -94,7 +96,7 @@ scan(void)
             children[i]);
 
         // Windows with override_redirect flag is not handled by WM.
-        // In addition, we only manage windows which are mapped.
+        // In addition, we only manage mapped windows.
         // If we support minimization, we should manage unmapped windows,
         // because minimization is usually accomplished by unmapping windows.
         if (!r->override_redirect && r->map_state == XCB_MAP_STATE_VIEWABLE)
@@ -106,7 +108,6 @@ scan(void)
 }
 
 // Process events.
-#define HANDLE_EVENT(type, handler) case type: handler((void *)event); break
 static void
 run(void)
 {
@@ -117,15 +118,17 @@ run(void)
         if (event->response_type == 0) {
             xcb_generic_error_t *e = (xcb_generic_error_t *)event;
 
-            // BadWindow error is sometimes not avoidable, because the window
-            // we operate can be unmapped or destroyed just after we send a
-            // request about it, by its owner process.
+            // We ignore BadWindow error, since it is sometimes not avoidable.
+            // The window we operate can be unmapped or destroyed by its owner
+            // process, just after we send a request about it.
             if (e->error_code != XCB_WINDOW) {
                 fprintf(stderr, "X protocol error: request=%s, error=%s\n",
                     xcb_event_get_request_label(e->major_code),
                     xcb_event_get_error_label(e->error_code));
             }
         } else {
+#define HANDLE_EVENT(type, handler) case type: handler((void *)event); break
+
             // Dispatch the event to the appropriate function.
             switch (XCB_EVENT_RESPONSE_TYPE(event)) {
                 HANDLE_EVENT(XCB_MAP_REQUEST, handle_map_request);
@@ -136,6 +139,9 @@ run(void)
                 HANDLE_EVENT(XCB_BUTTON_RELEASE, handle_button_release);
                 HANDLE_EVENT(XCB_MOTION_NOTIFY, handle_motion_notify);
             }
+
+#undef HANDLE_EVENT
+
             // Requests are buffered and not always automatically sent to the
             // server, so we need to flush the queue.
             // See also: http://lists.freedesktop.org/archives/xcb/2008-December/004152.html
@@ -144,7 +150,6 @@ run(void)
         free(event);
     }
 }
-#undef HANDLE_EVENT
 
 // Cleanup everything.
 static void
