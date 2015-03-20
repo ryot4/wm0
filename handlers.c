@@ -15,7 +15,7 @@ handle_map_request(xcb_map_request_event_t *ev)
 
     LOG("MapRequest on %x\n", ev->window);
 
-    // Windows with override_redirect flag is not handled by WM.
+    // Windows with override_redirect flag is not handled by non-compositing WM.
     r = XCB_REQUEST_AND_REPLY(wm.conn, get_window_attributes, NULL, ev->window);
     if (r != NULL) {
         if (!r->override_redirect) {

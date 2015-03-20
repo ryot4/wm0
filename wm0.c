@@ -1,4 +1,4 @@
-// wm0 - A small X11 window manager with libxcb.
+// wm0 - A small X11 window manager (WM) with libxcb.
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,7 +26,7 @@ static void scan(void);
 static void run(void);
 static void cleanup(void);
 
-// Get pixel value for the given RGB string.
+// Get pixel value for the given RGB string (#RRGGBB).
 static uint32_t
 alloc_color(char *rgb_string)
 {
@@ -95,7 +95,8 @@ scan(void)
         r = XCB_REQUEST_AND_REPLY(wm.conn, get_window_attributes, NULL,
             children[i]);
 
-        // Windows with override_redirect flag is not handled by WM.
+        // Windows with override_redirect flag is not handled by
+        // non-compositing WM.
         // In addition, we only manage mapped windows.
         // If we support minimization, we should manage unmapped windows,
         // because minimization is usually accomplished by unmapping windows.
@@ -120,7 +121,8 @@ run(void)
 
             // We ignore BadWindow error, since it is sometimes not avoidable.
             // The window we operate can be unmapped or destroyed by its owner
-            // process, just after we send a request about it.
+            // process, just after we send a request about it, which results in
+            // a BadWindow error.
             if (e->error_code != XCB_WINDOW) {
                 fprintf(stderr, "X protocol error: request=%s, error=%s\n",
                     xcb_event_get_request_label(e->major_code),

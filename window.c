@@ -79,7 +79,6 @@ window_manage(xcb_window_t id)
 
     grab_buttons(win->id);
 
-    // Add the window to the head of the list
     TAILQ_INSERT_HEAD(&windows, win, link);
 
     free(r);
@@ -168,6 +167,8 @@ window_close(struct window *win)
     LOG("close %x\n", win->id);
 
     // In fact, this does not "close" the window, but forces the close down of
-    // the client which has the window.
+    // the owner of the window, like xkill(1) does. It's very dangerous.
+    // To close the window gracefully, we should send WM_DELETE_WINDOW
+    // ClientMessage to the client.
     xcb_kill_client(wm.conn, win->id);
 }
