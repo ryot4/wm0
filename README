@@ -1,1 +1,23 @@
 wm0 - a simple X11 window manager
+
+FEATURES
+--------
+
+You can:
+
+ - focus a window (click)
+ - move a window (Alt + left drag)
+ - resize a window (Alt + right drag)
+ - close a window by killing its owner (Alt + middle click, not recommended)
+
+Assignment of the mouse buttons can be changed via config.h.
+
+DISCLAIMER
+----------
+
+wm0 is not intended for daily use.
+It lacks many features which real world window managers have, for example:
+
+ - maximization and minimization
+ - multi monitor (Xinerama, RandR) support
+ - desktop integration (ICCCM, EWMH) support
