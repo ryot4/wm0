@@ -26,7 +26,7 @@ static void scan(void);
 static void run(void);
 static void cleanup(void);
 
-// Get pixel value for the given RGB string (#RRGGBB).
+// Get a pixel value for the given RGB string (#RRGGBB).
 static uint32_t
 alloc_color(char *rgb_string)
 {
@@ -98,7 +98,7 @@ scan(void)
         // Windows with override_redirect flag is not handled by
         // non-compositing WM.
         // In addition, we only manage mapped windows.
-        // If we support minimization, we should manage unmapped windows,
+        // If we support minimization, we should consider unmapped windows,
         // because minimization is usually accomplished by unmapping windows.
         if (!r->override_redirect && r->map_state == XCB_MAP_STATE_VIEWABLE)
             win = window_manage(children[i]);
